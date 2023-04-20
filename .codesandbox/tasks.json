@@ -6,8 +6,7 @@
   "tasks": {
     "cargo check": {
       "name": "cargo check",
-      "command": "cargo check",
-      "runAtStart": true
+      "command": "cargo check"
     }
   }
 }

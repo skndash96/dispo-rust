@@ -79,7 +79,7 @@ async fn main() {
     println!("Mapped {} emojis", emojis.len());
 
     {
-        let mut data = client.data.write().await;
+         let mut data = client.data.write().await;
         data.insert::<Emojis>(emojis);
     };
 

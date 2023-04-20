@@ -61,7 +61,7 @@ pub async fn hc(
 
     if sub_cmd == "team" {
         //TODO TEAM
-        return Ok(());
+        Ok(())
     } else {
         //DUO
         if msg.mentions.len() == 0 {

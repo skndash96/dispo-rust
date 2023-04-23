@@ -8,13 +8,11 @@ use serenity::framework::standard::{
 
 use crate::utils::{
     get_player_data,
-    check_status,
     fix_status
 };
 use crate::models::{
     Players,
-    HcOptions,
-    Engaged
+    HcOptions
 };
 use crate::functions::cricket::{
     duo,
@@ -42,7 +40,7 @@ pub async fn hc(
             .clone()
     };
 
-    let sub_cmd = args.single::<String>()
+    let arg0 = args.single::<String>()
         .map_err(|e| e.to_string())
         ?;
     let options : HcOptions = match get_hc_options(&mut args) {
@@ -59,39 +57,38 @@ pub async fn hc(
     let u = &msg.author;
     let u_data = get_player_data(&db, u.id.to_string()).await?;
 
-    if sub_cmd == "team" {
-        //TODO TEAM
-        Ok(())
+    if arg0 == "team" {
+        team::set_match(
+            &ctx,
+            &msg,
+            &u,
+            options
+        ).await?;
+        //Status handled in above funxn
+
+        return Ok(());
     } else {
         //DUO
-        if msg.mentions.len() == 0 {
-            Err("syntax")?;
-        }
+        let t = if msg.mentions.len() > 0 {
+            &msg.mentions[0]
+        } else {
+            return Err("syntax")?;
+        };
 
-        let t = &msg.mentions[0];
         if t.id == u.id {
             Err("self_mention")?;
         }
+
         let t_data = get_player_data(&db, t.id.to_string()).await?;
 
-        let ps_id = [u, t].iter().map(|u| u.id.to_string()).collect();
+        let ps_id : Vec<String> = [u, t].iter().map(|u| u.id.to_string()).collect();
 
-        {
-            let mut data = ctx.data.write().await;
-            let engaged = data.get_mut::<Engaged>()
-                .ok_or("Failed to get engaged users data from context")
-                ?;
-
-            if let Err(why) = check_status(
-                &engaged,
-                &ps_id
-            ) {
-                Err(why)
-            } else {
-                (*engaged).extend_from_slice(&ps_id);
-                Ok(())
-            }
-        }?;
+        fix_status(
+            &ctx,
+            &ps_id[..],
+            true
+        ).await?;
+        //Checks status internally
 
         let result = duo::set_match(
             &ctx,
@@ -101,8 +98,11 @@ pub async fn hc(
             options
         ).await;
 
-        fix_status(&ctx, &ps_id)
-            .await?;
+        fix_status(
+            &ctx,
+            &ps_id[..],
+            false
+        ).await?;
 
         result?;
         Ok(())

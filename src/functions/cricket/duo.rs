@@ -1,5 +1,6 @@
 use std::time::Duration;
 use tokio::time::sleep;
+use rand;
 
 use serenity::model::user::User;
 use serenity::model::application::component::ButtonStyle;
@@ -8,7 +9,10 @@ use serenity::client::Context;
 
 use super::start::start_match;
 use crate::constants::TIMEOUT;
-use crate::models::HcOptions;
+use crate::models::{
+    HcOptions,
+    HcPlayer
+};
 use crate::utils::get_emoji;
 
 pub async fn set_match(
@@ -19,7 +23,6 @@ pub async fn set_match(
     options: HcOptions
 ) -> Result<(), String> {
     let channel_id = msg.channel_id;
-
     let mut talk_msg = channel_id.send_message(&ctx, |m| {
         m.content(format!(
             "<@{}>, Do you want to play handcricket with **{}**?",
@@ -40,7 +43,8 @@ pub async fn set_match(
             })
         ))
     }).await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_string())
+    ?;
 
     let will_res = talk_msg
         .await_component_interaction(&ctx)
@@ -65,7 +69,8 @@ pub async fn set_match(
             "{} failed to give a positive response, match cancelled.",
             t.name
         )).await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())
+        ?;
 
         talk_msg.delete(&ctx)
             .await
@@ -75,8 +80,11 @@ pub async fn set_match(
     }
 
     //TODO: Toss based on tossMulti
-    let w = &u;
-    let l = &t;
+    let (w,l) = {
+        let r : f32  = rand::random();
+        if r < 0.5 {(u, t)}
+        else {(t, u)}
+    };
 
     let toss_em = get_emoji(&ctx, "toss")
         .await
@@ -88,9 +96,10 @@ pub async fn set_match(
             toss_em
         )).components(|c| c)
     }).await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_string())
+    ?;
 
-    sleep(Duration::new(5, 0)).await;
+    sleep(Duration::new(3, 0)).await;
 
     talk_msg.edit(&ctx, |m| {
         m.content(format!(
@@ -113,7 +122,7 @@ pub async fn set_match(
     }).await
     .map_err(|e| e.to_string())?;
 
-    let choice_res = talk_msg
+    let toss_res = talk_msg
         .await_component_interaction(&ctx)
         .collect_limit(1)
         .author_id(w.id)
@@ -124,14 +133,10 @@ pub async fn set_match(
     let bat;
     let bowl;
 
-    if let Some(choice) = choice_res {
+    if let Some(choice) = toss_res {
         let [_bat, _bowl] = match choice.data.custom_id.as_str() {
             "bat" => [w, l],
-            "bowl" => [l, w],
-            _ => {
-                eprintln!("Cricket choice response recieved neither bat nor bowl.");
-                [l, w]
-            }
+            _/*"bowl"*/ => [l, w]
         };
 
         bat = _bat;
@@ -151,7 +156,11 @@ pub async fn set_match(
     }
 
     talk_msg.edit(&ctx, |m| {
-        m.content("Match starts, move to DMs players!")
+        m.content(format!(
+            "**{}** is batting and **{}** is bowling.\nMatch starts, move to DMs players!",
+            bat.name,
+            bowl.name
+        ))
         .components(|c| c)
     }).await
     .map_err(|e| e.to_string())?;
@@ -159,9 +168,9 @@ pub async fn set_match(
     start_match(
         &ctx,
         channel_id,
-        vec![&bat],
-        vec![&bowl],
-        &options,
+        vec![ HcPlayer::U(bat) ],
+        vec![ HcPlayer::U(bowl) ],
+        options,
         true
     ).await?;
 

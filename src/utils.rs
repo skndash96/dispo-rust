@@ -35,20 +35,33 @@ use crate::models::{
 
 pub async fn fix_status(
     ctx: &Context,
-    ids: &Vec<String>
+    ids: &[String],
+    add: bool
 ) -> Result<(), String> {
     let mut data = ctx.data.write().await;
     let engaged = data.get_mut::<Engaged>()
         .ok_or("Failed to get engaged users data from context")
         ?;
 
-    (*engaged).drain_filter(|id| ids.contains(id));
+    if add {
+        if let Err(why) = self::check_status(
+            &engaged,
+            &ids
+        ) {
+            Err(why)?;
+        } else {
+            (*engaged).extend_from_slice(&ids);
+        };
+    } else {
+        (*engaged).drain_filter(|id| ids.contains(id));
+    }
+
     return Ok(());
 }
 
 pub fn check_status(
     engaged: &EngagedType,
-    ids: &Vec<String>
+    ids: &[String]
 ) -> Result<(), String> {
     for id in ids.into_iter() {
         if engaged.contains(id) {

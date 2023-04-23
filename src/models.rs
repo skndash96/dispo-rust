@@ -2,10 +2,22 @@ use std::collections::HashMap;
 
 use serde::{ Serialize, Deserialize };
 
+use serenity::model::user::User;
 use serenity::prelude::TypeMapKey;
 
 use mongodb::bson::DateTime;
 use mongodb::Collection;
+
+#[derive(Debug, Copy, Clone)]
+pub struct Extra<'a> (
+    pub Option<&'a User>
+);
+
+#[derive(Debug, Copy, Clone)]
+pub enum HcPlayer<'a> {
+    U (&'a User),
+    E (Extra<'a>)
+}
 
 pub type EmojisType = HashMap<String, String>;
 

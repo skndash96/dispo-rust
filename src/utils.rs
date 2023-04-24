@@ -159,6 +159,9 @@ pub async fn after_command(
             )).await;
         } else {
             eprintln!("ERROR in {}: {:?}", cmd, why);
+            let _ = msg.reply(&ctx, format!(
+                "Something went wrong while processing the command. Try again or report to the official server."
+            )).await;
         }
     }
 }
@@ -195,7 +198,7 @@ pub async fn dispatch_error (
         },
         e => {
             eprintln!("ERROR on_dispatch_error! {:?}", e);
-            let _ = msg.reply(&ctx.http, format!(
+            let _ = msg.reply(&ctx, format!(
                 "Something went wrong while processing the command. Try again or report to the official server."
             )).await;
         }
@@ -242,7 +245,8 @@ pub async fn get_emojis(
             emojis.insert(
                 em.name.clone(),
                 format!(
-                    "<:{}:{}>",
+                    "<{}:{}:{}>",
+                    if em.animated {"a"} else {""},
                     em.name,
                     em.id
                 )

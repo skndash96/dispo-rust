@@ -1,1 +1,1 @@
-worker: cargo run -r
+worker: ls ./target/release/

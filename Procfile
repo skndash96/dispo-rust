@@ -1,1 +1,1 @@
-worker: ls ./target/release/
+worker: ./target/release/workspace

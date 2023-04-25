@@ -200,9 +200,19 @@ pub async fn set_match<'a>(
 
     if ps.len() > 22 {
         eprintln!("A match cancelled due to players >22.");
-        Err("A maximum of 22 players can play a team match at once. The count is too high! Try with a fewer members.")?;
+        talk_msg.reply(&ctx,
+            "A maximum of 22 players can play a team match at once. The count is too high! Try with a fewer members."
+        ).await
+        .map_err(|e| e.to_string())
+        ?;
+        return Ok(());
     } else if ps.len() < 3 {
-        Err("Aw poor, a minimum of 3 players are required to start a team match.")?;
+        talk_msg.reply(&ctx,
+            "Aw poor, a minimum of 3 players are required to start a team match."
+        ).await
+        .map_err(|e| e.to_string())
+        ?;
+        return Ok(());
     }
 
     let mut ps_hc : Vec<HcPlayer> = vec![];

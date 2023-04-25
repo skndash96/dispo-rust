@@ -98,6 +98,8 @@ pub async fn set_match<'a>(
     let mut ps_id : Vec<String>= vec![];
 
     while let Some(react) = stream.next().await {
+        println!("{:?}", react);
+
         let is_added = react.is_added();
         let react = react.as_inner_ref().clone();
 

@@ -130,7 +130,8 @@ pub async fn set_match<'a>(
 
             talk_msg.delete(&ctx)
                 .await
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| e.to_string())
+                ?;
 
             msg.reply(&ctx, format!(
                 "Team Match cancelled by {}.",
@@ -169,7 +170,7 @@ pub async fn set_match<'a>(
             if let Err(why) = fix_status(
                 &ctx,
                 &ps_id[idx..idx+1],
-                true
+                false
             ).await {
                 eprintln!("Failed to fix status to false in hc team collect: {:?}", why);
             }

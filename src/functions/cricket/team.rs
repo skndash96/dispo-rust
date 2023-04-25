@@ -39,7 +39,7 @@ pub async fn set_match<'a>(
     .ok_or("Failed to get toss emoji")
     ?;
 
-    let enter_em = {
+    let enter_em_id = {
         let em = get_emoji(
             &ctx,
             "enter"
@@ -60,13 +60,12 @@ pub async fn set_match<'a>(
             EmojiId::from(id)
         )
     }?;
-    channel_id.say(&ctx, format!(
-        "enter: <a:enter:{}> <:enter:{}>",
-        enter_em.to_string(),
-        enter_em.to_string()
-    ))
-    .await
-    .map_err(|e| e.to_string())?;
+    let enter_em = ReactionType::Custom {
+        name: Some(String::from("enter")),
+        id: enter_em_id,
+        animated: false
+    };
+    let cross_em = ReactionType::Unicode(String::from("❌"));
 
     let talk_msg = channel_id.send_message(&ctx, |m| {
         m.embed(|e| {
@@ -80,8 +79,8 @@ pub async fn set_match<'a>(
         })
         .reference_message(msg)
         .reactions([
-            ReactionType::from(enter_em),
-            ReactionType::from('❌')
+            enter_em.clone() /*clone cause used later*/,
+            cross_em
         ])
     })
     .await

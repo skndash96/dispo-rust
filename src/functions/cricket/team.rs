@@ -72,7 +72,7 @@ pub async fn set_match<'a>(
             e
             .title("Team Match")
             .description(format!(
-                "React to join **{}**'s match",
+                "React to join **{}**'s handcricket match.",
                 u.name
             ))
             .color(EMBED_COLOR)
@@ -89,7 +89,6 @@ pub async fn set_match<'a>(
 
     let mut stream = talk_msg
         .await_reactions(&ctx)
-        .message_id(talk_msg.id)
         .timeout(Duration::new(60, 0))
         .added(true)
         .removed(true)
@@ -98,8 +97,6 @@ pub async fn set_match<'a>(
     let mut ps_id : Vec<String>= vec![];
 
     while let Some(react) = stream.next().await {
-        println!("{:?}", react);
-
         let is_added = react.is_added();
         let react = react.as_inner_ref().clone();
 
@@ -130,6 +127,17 @@ pub async fn set_match<'a>(
                 &ps_id[..],
                 false
             ).await?;
+
+            talk_msg.delete(&ctx)
+                .await
+                .map_err(|e| e.to_string())?;
+
+            msg.reply(&ctx, format!(
+                "Team Match cancelled by {}.",
+                from.name
+            )).await
+            .map_err(|e| e.to_string())?;
+
             return Ok(());
         }
 

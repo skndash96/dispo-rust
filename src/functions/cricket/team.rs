@@ -166,11 +166,20 @@ pub async fn set_match<'a>(
             ps_id.iter().position(
                 |id| *id == from.id.to_string()
             ) {
+            if let Err(why) = fix_status(
+                &ctx,
+                &ps_id[idx..idx+1],
+                true
+            ).await {
+                eprintln!("Failed to fix status to false in hc team collect: {:?}", why);
+            }
+
             ps_id.remove(idx);
         }
 
         msg.channel_id.say(&ctx, format!(
-            "**{}** {} the team match.",
+            "{} **{}** - {} the team match.",
+            if is_added {"☑️"} else {"❎"},
             from.name,
             if is_added { "joined" } else { "left"}
         )).await

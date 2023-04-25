@@ -61,6 +61,13 @@ pub async fn set_match<'a>(
         )
     }?;
 
+    channel_id.say(&ctx, format!(
+        "enter: {}",
+        enter_em.to_string()
+    ))
+    .await
+    .map_err(|e| e.to_string());
+
     let talk_msg = channel_id.send_message(&ctx, |m| {
         m.embed(|e| {
             e

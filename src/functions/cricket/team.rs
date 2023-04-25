@@ -60,13 +60,13 @@ pub async fn set_match<'a>(
             EmojiId::from(id)
         )
     }?;
-
     channel_id.say(&ctx, format!(
-        "enter: {}",
+        "enter: <a:enter:{}> <:enter:{}>",
+        enter_em.to_string(),
         enter_em.to_string()
     ))
     .await
-    .map_err(|e| e.to_string());
+    .map_err(|e| e.to_string())?;
 
     let talk_msg = channel_id.send_message(&ctx, |m| {
         m.embed(|e| {

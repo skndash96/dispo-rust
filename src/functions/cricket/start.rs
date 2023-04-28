@@ -1,6 +1,10 @@
-use serenity::model::id::ChannelId;
+use serenity::{
+    model::id::ChannelId,
+    builder::CreateEmbed
+};
 use serenity::client::Context;
 
+use crate::constants::EMBED_COLOR;
 use crate::models::{
     HcOptions,
     HcPlayer
@@ -14,6 +18,67 @@ pub async fn start_match<'a> (
     options: HcOptions,
     is_duo: bool
 ) -> Result<(), String> {
-    //dududjdjdjdjfjfjdjdjxjxjcjcjfjkfkffkfkckdkdkdkfkdkkf
+    let hc_typ = if is_duo { "duo" } else { "team" };
+
+    let overs = options.overs;
+    let wickets = options.wickets;
+    let post = options.post;
+
+    let mut bat : HcPlayer = bat_team[0]; 
+    let mut bowl : HcPlayer = bowl_team[0];
+    let mut ball_no : u16 = 0;
+    let mut bat_scr : u16 = 0;
+    let mut team_scr : u16 = 0;
+    let mut in1_bat : Vec<u16> = vec![];
+    let mut in2_bat : Vec<u16> = vec![];
+    let mut ducks : Vec<String> = vec![];
+
+    let send = || async {
+        // let txt = String::new();
+
+        // let mut idx = 0;
+        // for scr in (if in1 { in1_bat } else { in2_bat }) {
+        //     txt.push_str(format!(
+        //         bat_team[idx]
+        //     ).as_str());
+        // }
+
+        let mut embed = CreateEmbed::default();
+        embed
+            .title(format!(
+                "{} Match",
+                hc_typ
+            ))
+            .description("Let the match begin!")
+            .color(EMBED_COLOR);//TODO
+
+        let bat_u = match bat {
+            HcPlayer::E(u) => u.0.unwrap(),
+            HcPlayer::U(u) => u
+        };
+        let bowl_u = match bowl {
+            HcPlayer::E(u) => u.0.unwrap(),
+            HcPlayer::U(u) => u
+        };
+
+        if post {
+            channel_id.send_message(&ctx, |m| m.set_embed(embed.clone()))
+            .await
+            .map_err(|e| e.to_string())
+            ?;
+        }
+
+        bat_u.dm(&ctx, |m| m.set_embed(embed.clone()))
+            .await
+            .map_err(|e| e.to_string())
+            ?;
+        bowl_u.dm(&ctx, |m| m.set_embed(embed.clone()))
+            .await
+            .map_err(|e| e.to_string())
+            ?;
+
+        Ok::<(), String>(())
+    };
+
     Ok(())
 }

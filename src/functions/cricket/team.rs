@@ -206,7 +206,7 @@ pub async fn set_match<'a>(
     ).await
     .map_err(|e| e.to_string())
     ?;
-    ps.drain_filter(|p| !p.bot);
+    ps.drain_filter(|p| p.bot/*removes all bots*/);
     let ps = ps;
 
     println!("People: {:?}", ps);

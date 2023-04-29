@@ -44,6 +44,8 @@ async fn main() {
        .expect("while mapping commands.");
     println!("Mapped {} commands.", commands.len());
 
+    //TODO: Check permissions before running command
+
     let framework = StandardFramework::new()
         .configure(|c| c
             .prefix("e.")

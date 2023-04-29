@@ -58,13 +58,27 @@ pub async fn hc(
     let u_data = get_player_data(&db, u.id.to_string()).await?;
 
     if arg0 == "team" {
-        team::set_match(
+        let result = team::set_match(
             &ctx,
             &msg,
             &u,
             options
-        ).await?;
+        ).await;
         //Status handled in above funxn
+
+        if let Err(why) = result {
+            if why.starts_with("res:")/*"res: name"*/ {
+                msg.reply(&ctx, format!(
+                    "**{}** failed to give a response, match cancelled.",
+                    why[5..].to_string()
+                ))
+                .await
+                .map_err(|e| e.to_string())
+                ?;
+            } else {
+                Err(why)?;
+            }
+        }
 
         return Ok(());
     } else {

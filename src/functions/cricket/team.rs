@@ -94,7 +94,7 @@ pub async fn set_match<'a>(
         .removed(true)
         .build();
 
-    let mut ps_id : Vec<String>= vec![];
+    let mut ps_id : Vec<String> = vec![];
 
     while let Some(react) = stream.next().await {
         let is_added = react.is_added();
@@ -134,10 +134,11 @@ pub async fn set_match<'a>(
                 ?;
 
             msg.reply(&ctx, format!(
-                "Team Match cancelled by {}.",
+                "Team Match cancelled by **{}**.",
                 from.name
             )).await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| e.to_string())
+            ?;
 
             return Ok(());
         }
@@ -160,6 +161,13 @@ pub async fn set_match<'a>(
 
                 react.delete(&ctx)
                 .await
+                .map_err(|e| e.to_string())
+                ?;
+
+                msg.channel_id.say(&ctx, format!(
+                    "**{}** is already engaged in a match.",
+                    from.name
+                )).await
                 .map_err(|e| e.to_string())
                 ?;
             };
@@ -190,7 +198,7 @@ pub async fn set_match<'a>(
 
     stream.stop();
 
-    let ps = talk_msg.reaction_users(
+    let mut ps = talk_msg.reaction_users(
         &ctx,
         enter_em,
         None,
@@ -198,6 +206,8 @@ pub async fn set_match<'a>(
     ).await
     .map_err(|e| e.to_string())
     ?;
+    ps.drain_filter(|p| !p.bot);
+    let ps = ps;
 
     if ps.len() > 22 {
         eprintln!("A match cancelled due to players >22.");
@@ -251,7 +261,7 @@ pub async fn set_match<'a>(
 
     channel_id.send_message(&ctx, |m| {
         m.content(format!(
-            "Let's start with this. We got,\n Leader 1: {}\n Leader 2: {}.",
+            "Teaming: We got,\n Captain 1: **{}**\n Captain 2: **{}**.",
             cap1.name,
             cap2.name
         ))
@@ -277,6 +287,66 @@ pub async fn set_match<'a>(
         ).await?;
 
         is1pick = !is1pick;
+    }
+
+    let last_p_idx = ps_hc.len()-1;
+    if let HcPlayer::E(_) = ps_hc[last_p_idx] {
+        let et1 = t1_idx.contains(&last_p_idx);
+        let cap = if et1 {&cap1} else {&cap2};
+        let t_idx = if et1 {&t1_idx} else {&t2_idx};
+
+        channel_id.say(&ctx, format!(
+            "<@{}>, Who is going to play Extrawicket in your team? Ping them.",
+            cap.id
+        ))
+        .await
+        .map_err(|e| e.to_string())
+        ?;
+
+        loop {
+            let rep = channel_id
+                .await_reply(&ctx)
+                .timeout(Duration::new(TIMEOUT, 0))
+                .author_id(cap.id)
+                .await;
+
+            if let Some(val) = rep {
+                if val.mentions.len() == 0 {
+                    continue;
+                }
+                let c = &val.mentions[0];
+
+                let idx = ps.iter().position(|p| {
+                    p.id == c.id
+                });
+
+                if let Some(i) = {
+                    if let Some(idxu) = idx {
+                        t_idx.iter().position(|i| *i == idxu)
+                    } else {
+                        None
+                    }
+                } {
+                    ps_hc[last_p_idx] = HcPlayer::E(
+                        Extra(Some(&ps[i]))
+                    );
+                    break;
+                } else {
+                    val.reply(&ctx, format!(
+                        "Mentioned player is not valid player in your team."
+                    ))
+                    .await
+                    .map_err(|e| e.to_string())
+                    ?;
+                    continue;
+                }
+            } else {
+                return Err(format!(
+                    "res: {}",
+                    cap.name
+                ));
+            }
+        }
     }
 
     let mut toss_msg = channel_id.say(&ctx, format!(
@@ -319,7 +389,6 @@ pub async fn set_match<'a>(
             if is1win {cap1.id} else {cap2.id}
         )
         .collect_limit(1)
-        .message_id(toss_msg.id)
         .timeout(Duration::new(TIMEOUT, 0))
         .await;
 
@@ -329,19 +398,15 @@ pub async fn set_match<'a>(
             _/*"bowl"*/ => false
         }
     } else {
-        toss_msg.reply(&ctx, format!(
-            "{} failed to give a response, match cancelled.",
-            if is1win {cap1.name.clone()} else {cap2.name.clone()}
-        )).await
-        .map_err(|e| e.to_string())
-        ?;
-
         toss_msg.delete(&ctx)
             .await
             .map_err(|e| e.to_string())
             ?;
 
-        return Ok(());
+        return Err(format!(
+            "res: {}",
+            if is1win {cap1.name.clone()} else {cap2.name.clone()}
+        ));
     };
 
     let t1_hc : Vec<HcPlayer> = t1_idx.iter().map(|idx| {
@@ -414,14 +479,23 @@ pub async fn set_match<'a>(
         }).await
         .map_err(|e| e.to_string())
         ?;
-        
-        let mut stream = channel_id
-            .await_replies(&ctx)
-            .author_id(cap.id)
-            .timeout(Duration::new(TIMEOUT, 0))
-            .build();
 
-        while let Some(rep) = stream.next().await {
+        loop {
+            let rep = channel_id
+                .await_reply(&ctx)
+                .author_id(cap.id)
+                .timeout(Duration::new(TIMEOUT, 0))
+                .await;
+
+            if rep.is_none() {
+                return Err(format!(
+                    "res: {}",
+                    cap.name
+                ));
+            }
+
+            let rep = rep.unwrap();
+
             if rep.mentions.len() == 0 {
                 continue;
             }
@@ -451,7 +525,6 @@ pub async fn set_match<'a>(
                 continue;
             }
         }
-        stream.stop();
 
         Ok(())
     }

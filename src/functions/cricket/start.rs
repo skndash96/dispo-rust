@@ -29,18 +29,23 @@ pub async fn start_match<'a> (
     let mut ball_no : u16 = 0;
     let mut bat_scr : u16 = 0;
     let mut team_scr : u16 = 0;
+    let mut is_in1 : bool = true;
     let mut in1_bat : Vec<u16> = vec![];
     let mut in2_bat : Vec<u16> = vec![];
     let mut ducks : Vec<String> = vec![];
 
     let send = || async {
-        // let txt = String::new();
+        let txt = String::new();
 
         // let mut idx = 0;
-        // for scr in (if in1 { in1_bat } else { in2_bat }) {
-        //     txt.push_str(format!(
-        //         bat_team[idx]
-        //     ).as_str());
+        // for p in bat_team {
+        //     let name = match p {
+        //         HcPlayer::U(u) => u.name,
+        //         HcPlayer::E(u) => String::from("extra")
+        //     };
+        //     let scr = if is_in1 { in1_bat[idx] };
+
+        //     idx += 1;
         // }
 
         let mut embed = CreateEmbed::default();

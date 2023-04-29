@@ -209,6 +209,8 @@ pub async fn set_match<'a>(
     ps.drain_filter(|p| !p.bot);
     let ps = ps;
 
+    println!("People: {:?}", ps);
+
     if ps.len() > 22 {
         eprintln!("A match cancelled due to players >22.");
         talk_msg.reply(&ctx,
@@ -450,6 +452,8 @@ pub async fn set_match<'a>(
         ps_idx: &mut Vec<usize>,
         t_idx: &mut Vec<usize>
      ) -> Result<(), String> {
+        println!("{:?}", ps_idx);
+
         if ps_idx.len() == 1 {
             t_idx.push(
                 ps_idx.remove(0)

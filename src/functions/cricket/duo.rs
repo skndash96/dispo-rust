@@ -81,8 +81,8 @@ pub async fn set_match(
 
     //TODO: Toss based on tossMulti
     let (w,l) = {
-        let r : f32  = rand::random();
-        if r < 0.5 {(u, t)}
+        let isuwin : bool  = rand::random();
+        if isuwin {(u, t)}
         else {(t, u)}
     };
 

@@ -92,6 +92,14 @@ pub async fn start_match<'a> (
         txt
     };
 
+    let pad = |a: &String| {
+        if a.len() > 12 {
+            format!("{}..", &a[..10]) /*take first 10 and add ..*/
+        } else {
+            format!("{:<12}", &a)
+        }
+    };
+
     let get_team_txt = || {
         let mut txt = String::new();
 
@@ -101,6 +109,8 @@ pub async fn start_match<'a> (
                 HcPlayer::U(u) => u.name.clone(),
                 HcPlayer::E(u) => format!("{} (extra)", u.0.unwrap().name.clone())
             };
+            let name = pad(&name);
+    
             let [scr, balls] = c_bat_logs[i];
             let isc = if i == c_bat_idx {"_"} else {""};
 
@@ -131,6 +141,7 @@ pub async fn start_match<'a> (
                 HcPlayer::U(u) => u.name.clone(),
                 HcPlayer::E(u) => format!("{} (extra)", u.0.unwrap().name.clone())
             };
+            let name = pad(&name);
             let [scr, balls] = c_bowl_logs[i];
             let isc = if i == c_bowl_idx {"_"} else {""};
 

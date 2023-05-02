@@ -24,7 +24,7 @@ use crate::models::{
     Extra
 };
 
-pub async fn set_match<'a>(
+pub async fn set_match(
     ctx: &Context,
     msg: &Message,
     u: &User,
@@ -302,7 +302,7 @@ pub async fn set_match<'a>(
             );
 
             channel_id.say(&ctx, format!(
-                "<@{}>, Who is going to play Extrawicket in your team? Ping them. Team members are:\n{}",
+                "<@{}>, Who is going to play Extrawicket in your team? Ping them. Team members are{}",
                 cap.id,
                 &avail
             ))
@@ -353,8 +353,6 @@ pub async fn set_match<'a>(
                 }
             }
         }
-
-        //TODO: Get ordering of teams.
 
         let mut toss_msg = channel_id.say(&ctx, format!(
             "Teaming is done, let's flip the toss... {}",
@@ -416,10 +414,106 @@ pub async fn set_match<'a>(
             ));
         };
 
-        let t1_hc : Vec<HcPlayer> = t1_idx.iter().map(|idx| {
+        let order1 = get_order(
+            &ctx,
+            &channel_id,
+            &ps_hc,
+            &cap1,
+            &t1_idx
+        ).await?;
+        let order2 = get_order(
+            &ctx,
+            &channel_id,
+            &ps_hc,
+            &cap2,
+            &t2_idx
+        ).await?;
+
+        async fn get_order<'a> (
+            ctx: &Context,
+            channel_id: &ChannelId,
+            ps_hc: &Vec<HcPlayer<'a>>,
+            cap : &User,
+            t_idx : &Vec<usize>
+        ) -> Result<Vec<usize>, String> {
+            channel_id.say(&ctx, format!(
+                "<@{}>, choose the order of your team by pinging them. Team members are{}\nNote: If there's an extrawicket, it is always put at last. Just type 'none' if you don't care.",
+                cap.id,
+                get_avail_txt(&ps_hc, &t_idx)
+            ))
+            .await
+            .map_err(|e| e.to_string())
+            ?;
+
+            loop {
+                let mut order = vec![];
+
+                let rep = channel_id
+                    .await_reply(&ctx)
+                    .author_id(cap.id)
+                    .timeout(Duration::new(TIMEOUT, 0))
+                    .await;
+
+                if let Some(msg) = rep {
+                    if msg.content.to_lowercase().contains("none") {
+                        return Ok(t_idx.clone());
+                    };
+
+                    for men in &msg.mentions {
+                        if let Some(idx) = t_idx.iter().find(|i|
+                            match ps_hc[**i] {
+                                HcPlayer::U(u) => u.id == men.id,
+                                HcPlayer::E(_) => false/*never gona happem*/
+                            }
+                        ) {
+                            order.push(*idx);
+                        } else {
+                            msg.reply(&ctx, format!(
+                                "The person you pinged - **{}** do not belong in your team. ",
+                                men.name
+                            ))
+                            .await
+                            .map_err(|e| e.to_string())
+                            ?;
+
+                            continue;
+                        }
+                    }
+
+                    let is_ew = (match ps_hc[ps_hc.len()-1] {
+                        HcPlayer::U(_) => false,
+                        HcPlayer::E(_) => true
+                    }) && t_idx.contains(&(ps_hc.len()-1));
+    
+                    if is_ew {
+                        order.push(ps_hc.len()-1);
+                    }
+    
+                    if order.len() == t_idx.len() {
+                        return Ok(t_idx.clone());
+                    } else {
+                        msg.reply(&ctx, "All team members are not pinged.")
+                            .await
+                            .map_err(|e| e.to_string())
+                            ?;
+    
+                        continue;
+                    }
+                } else {
+                    return Err(format!(
+                        "res: {}",
+                        cap.name
+                    ));
+                }
+            }
+        }
+
+        println!("{:?} {:?} {:?}", ps_hc, order1, order2);
+
+        let t1_hc : Vec<HcPlayer> = order1.iter().map(|idx| {
             ps_hc[*idx]
         }).collect();
-        let t2_hc : Vec<HcPlayer> = t2_idx.iter().map(|idx| {
+        let t2_hc : Vec<HcPlayer> = order2.iter().map(|idx| {
             ps_hc[*idx]
         }).collect();
 
@@ -462,7 +556,7 @@ pub async fn set_match<'a>(
                 HcPlayer::E(_) => String::from("Extrawicket")
             };
             avail.push_str(format!(
-                "{},\n",
+                ",\n{}",
                 name
             ).as_str());
         }
@@ -494,7 +588,7 @@ pub async fn set_match<'a>(
 
         let _ = channel_id.send_message(&ctx, |m| {
             m.content(format!(
-                "Choose your team member by pinging: <@{}>, available players are:\n{}",
+                "Choose your team member by pinging: <@{}>, available players are{}",
                 cap.id,
                 &avail
             ))

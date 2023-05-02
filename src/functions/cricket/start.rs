@@ -18,6 +18,7 @@ pub async fn start_match<'a> (
     options: HcOptions,
     is_duo: bool
 ) -> Result<(), String> {
+    let num_p = bat_team.len();
     let hc_typ = if is_duo { "duo" } else { "team" };
 
     let overs = options.overs;
@@ -26,8 +27,8 @@ pub async fn start_match<'a> (
 
     type Logs = Vec<[u16; 2 /*[score,balls]*/]>;
     let mut isin1 = true;
-    let mut in1_logs : Logs = vec![];
-    let mut in2_logs : Logs = vec![];
+    let mut in1_logs : Logs = (0..num_p).map(|_| [0,0]).collect();
+    let mut in2_logs : Logs = (0..num_p).map(|_| [0,0]).collect();
     let mut c_bat_logs : &Logs = &in1_logs;
     let mut c_bowl_logs : &Logs = &in2_logs;
 
